@@ -170,47 +170,36 @@ void autonomous() {
  * Runs in driver control
  */
 void opcontrol() {
+  // check if button was pressed last tick
+  bool intakeWasPressed = false;
+  // check if intake should be running
+  bool runIntake = false;
 
-    // check if button was pressed last tick
-        bool intakeWasPressed = false;
-    // check if intake should be running
-        bool runIntake = false;
+  // loop to continuously update motors
+  while (true) {
+    // get joystick positions
+    int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
+    int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
 
-    // loop to continuously update motors
-    while (true) {
-        intake.move_voltage(12000); //TEST
-        
-        // drive train
+    // move the chassis with curvature drive
+    chassis.arcade(leftY, rightX);
 
-            // get joystick positions
-            int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
-            int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
-
-            // move the chassis with curvature drive
-            chassis.arcade(leftY, rightX);
-
-        // intake
-            // intake motor
-
-             intake.move_voltage(12); //TEST
-
-            if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT) == true) {
-                if (intakeWasPressed == false) {
-                    runIntake = !runIntake; // flips intake state
-                    intakeWasPressed = true; // button was pressed last tick
-                }
-            } else {
-                    intakeWasPressed = false;
-            }
-
-            
-            // run intake if it is on
-            if (runIntake == true) {
-                intake.move_voltage(12);
-            } else {
-                intake.move_voltage(0);
-            } 
-        // delay to save resources
-        pros::delay(10); 
+    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT) == true) {
+      if (intakeWasPressed == false) {
+        runIntake = !runIntake;  // flips intake state
+        intakeWasPressed = true; // button was pressed last tick
+      }
+    } else {
+      intakeWasPressed = false;
     }
+
+    // run intake if it is on
+    if (runIntake == true) {
+      intake.move_voltage(12000);
+    } else {
+      intake.move_voltage(0);
+    }
+    // delay to save resources
+    pros::delay(10);
+  }
 }
