@@ -16,6 +16,12 @@ pros::MotorGroup rightMotors({-19, 17, 15},
 // other motors
 pros::Motor intake (12); // intake motor port 12
 
+// pneumatics
+#define MOGO_DIGITAL_SENSOR_PORT 'A'
+    pros::adi::DigitalOut mogoMechPiston (MOGO_DIGITAL_SENSOR_PORT);
+#define INTAKE_DIGITAL_SENSOR_PORT 'H'
+    pros::adi::DigitalOut intakePiston (INTAKE_DIGITAL_SENSOR_PORT);
+
 // Inertial Sensor on port 14
 pros::Imu imu(14);
 
@@ -171,34 +177,73 @@ void autonomous() {
  */
 void opcontrol() {
   // check if button was pressed last tick
-  bool intakeWasPressed = false;
+    bool intakeWasPressed = false;
   // check if intake should be running
-  bool runIntake = false;
+    bool runIntake = false;
+  //check if MoGo mech is extended
+    bool mogoExtended = false;
+//check if button was pressed at last tick
+    bool mogoWasPressed = false;
+
 
   // loop to continuously update motors
   while (true) {
-    // get joystick positions
-    int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
-    int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
+    //drive train
 
-    // move the chassis with curvature drive
-    chassis.arcade(leftY, rightX);
+        // get joystick positions
+        int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
+        int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
 
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT) == true) {
-      if (intakeWasPressed == false) {
-        runIntake = !runIntake;  // flips intake state
-        intakeWasPressed = true; // button was pressed last tick
-      }
-    } else {
-      intakeWasPressed = false;
-    }
+        // move the chassis with curvature drive
+        chassis.arcade(leftY, rightX);
 
-    // run intake if it is on
-    if (runIntake == true) {
-      intake.move_voltage(12000);
-    } else {
-      intake.move_voltage(0);
-    }
+    //intake
+        //toggles intake spinning
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2) == true) {
+        if (intakeWasPressed == false) {
+            runIntake = !runIntake;  // flips intake state
+            intakeWasPressed = true; // button was pressed last tick
+        }
+        } else {
+        intakeWasPressed = false;
+        }
+
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1) == true) { //if r1 is pressed spin the intake backwards
+            runIntake = false;
+            intake.move_voltage(-12000);
+        } else { // if r1 is not pressed spin the intake based on toggle
+
+            // run intake if it is on
+            if (runIntake == true) {
+            intake.move_voltage(12000);
+            } else {
+            intake.move_voltage(0);
+            }
+        }
+        //raises and lowers intake
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2) == true) {
+            intakePiston.set_value(true);
+        } else {
+            intakePiston.set_value(false);
+        }
+    // MoGo mech
+        //toggles MoGo mech
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
+            if (mogoWasPressed == false) {
+                mogoExtended = !mogoExtended;
+            }
+            mogoWasPressed = true;
+        } else {
+            mogoWasPressed = false;
+        }
+        //moves MoGo based on toggle
+        if (mogoExtended == true) {
+            mogoMechPiston.set_value(true);
+        } else {
+            mogoMechPiston.set_value(false);
+        }
+
+
     // delay to save resources
     pros::delay(10);
   }
